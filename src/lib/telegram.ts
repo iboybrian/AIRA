@@ -12,7 +12,7 @@ export async function sendTelegramDocument(pdfBuffer: Buffer, caption: string) {
   formData.append("caption", caption);
   
   // Create a Blob from the Buffer
-  const pdfBlob = new Blob([pdfBuffer], { type: "application/pdf" });
+  const pdfBlob = new Blob([pdfBuffer as unknown as BlobPart], { type: "application/pdf" });
   formData.append("document", pdfBlob, "SafeCheck_Report.pdf");
 
   try {
