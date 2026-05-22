@@ -23,19 +23,22 @@ export async function generatePDF(data: PDFData): Promise<Buffer> {
       });
 
       // Branding & Header
+      const logoAira = path.join(process.cwd(), "public", "aira2.JPG");
       const logoPng = path.join(process.cwd(), "public", "logo.png");
       const logoJpg = path.join(process.cwd(), "public", "logo.jpg");
+      
       let logoPath = null;
-      if (fs.existsSync(logoPng)) logoPath = logoPng;
+      if (fs.existsSync(logoAira)) logoPath = logoAira;
+      else if (fs.existsSync(logoPng)) logoPath = logoPng;
       else if (fs.existsSync(logoJpg)) logoPath = logoJpg;
 
       if (logoPath) {
-        doc.image(logoPath, { fit: [250, 100], align: "center" });
+        doc.image(logoPath, { fit: [200, 120], align: "center" });
         doc.moveDown(1);
       } else {
-        doc.fillColor("#0B1E36").fontSize(24).text("SafeCheck AI", { align: "center" });
+        doc.fillColor("#0B2A5C").fontSize(24).text("AIRA", { align: "center" });
       }
-      doc.fontSize(14).fillColor("#FF6B35").text("Reporte de Inspección de Seguridad", { align: "center" });
+      doc.fontSize(14).fillColor("#4CAF50").text("Reporte de Inspección de Seguridad", { align: "center" });
       doc.moveDown(2);
 
       // Metadata
@@ -47,14 +50,14 @@ export async function generatePDF(data: PDFData): Promise<Buffer> {
       doc.moveDown();
 
       // Observation section
-      doc.fontSize(14).fillColor("#0B1E36").font("Helvetica-Bold").text("Observación en Campo");
+      doc.fontSize(14).fillColor("#0B2A5C").font("Helvetica-Bold").text("Observación en Campo");
       doc.moveDown(0.5);
       doc.fontSize(11).fillColor("#333333").font("Helvetica").text(data.observation);
       doc.moveDown(2);
 
       // AI Analysis
       doc.addPage();
-      doc.fontSize(16).fillColor("#0B1E36").font("Helvetica-Bold").text("Análisis de Seguridad (OSHA)", { underline: true });
+      doc.fontSize(16).fillColor("#0B2A5C").font("Helvetica-Bold").text("Análisis de Seguridad (OSHA)", { underline: true });
       doc.moveDown();
       
       const lines = data.analysisResponse.split("\n");
@@ -80,9 +83,25 @@ export async function generatePDF(data: PDFData): Promise<Buffer> {
           continue;
         }
 
-        // Render table rows using Courier for better alignment
+        // Render table rows
         if (cleanLine.startsWith("|") && cleanLine.endsWith("|")) {
-          doc.font("Courier").fillColor("#333333").fontSize(10).text(cleanLine);
+          // Salte filas separadoras
+          if (cleanLine.replace(/[|\-\s]/g, "") === "") {
+            continue;
+          }
+          const cells = cleanLine.split("|").slice(1, -1).map(c => c.trim());
+          const colWidth = (doc.page.width - 100) / cells.length;
+          const startY = doc.y;
+          const rowHeight = 20;
+
+          doc.font("Helvetica").fillColor("#333333").fontSize(10);
+          for (let i = 0; i < cells.length; i++) {
+            const cellX = 50 + i * colWidth;
+            doc.rect(cellX, startY, colWidth, rowHeight).strokeColor("#CCCCCC").stroke();
+            doc.text(cells[i], cellX + 5, startY + 5, { width: colWidth - 10, lineBreak: false });
+          }
+          doc.y = startY + rowHeight;
+          doc.x = 50;
           continue;
         }
 
@@ -111,7 +130,7 @@ export async function generatePDF(data: PDFData): Promise<Buffer> {
         } else if (cleanLine.includes("BAJO")) {
           color = "#059669";
         } else if (isHeader) {
-          color = "#0B1E36";
+          color = "#0B2A5C";
         }
 
         // Handle **bold** text within the line
@@ -119,18 +138,22 @@ export async function generatePDF(data: PDFData): Promise<Buffer> {
         if (parts.length === 1) {
           doc.fillColor(color).fontSize(size).font(font).text(parts[0]);
         } else {
-          for (let i = 0; i < parts.length; i++) {
-            const isBold = i % 2 !== 0;
-            const currentFont = isBold || font === "Helvetica-Bold" ? "Helvetica-Bold" : "Helvetica";
-            doc.fillColor(color).fontSize(size).font(currentFont).text(parts[i], { continued: i < parts.length - 1 });
+          const validParts = parts.map((text, idx) => ({ text, isBold: idx % 2 !== 0 })).filter(p => p.text !== "");
+          const lastIndex = validParts.length - 1;
+          
+          for (let i = 0; i < validParts.length; i++) {
+            const p = validParts[i];
+            const currentFont = p.isBold || font === "Helvetica-Bold" ? "Helvetica-Bold" : "Helvetica";
+            doc.fillColor(color).fontSize(size).font(currentFont).text(p.text, { continued: i < lastIndex });
           }
+          doc.moveDown(0.3);
         }
       }
 
       // Images Section
       if (data.imageParts.length > 0) {
         doc.addPage();
-        doc.fontSize(16).fillColor("#0B1E36").font("Helvetica-Bold").text("Evidencia Fotográfica", { align: "center" });
+        doc.fontSize(16).fillColor("#0B2A5C").font("Helvetica-Bold").text("Evidencia Fotográfica", { align: "center" });
         doc.moveDown();
         
         for (let i = 0; i < data.imageParts.length; i++) {

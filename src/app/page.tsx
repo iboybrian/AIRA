@@ -136,7 +136,7 @@ export default function Home() {
   return (
     <main className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>SafeCheck <span className={styles.titleHighlight}>AI</span></h1>
+        <img src="/aira2.JPG" alt="AIRA Logo" style={{ display: 'block', margin: '0 auto', maxHeight: '120px', width: 'auto' }} />
         <p className={styles.subtitle}>Inspección de Seguridad Industrial Inteligente</p>
       </div>
 
