@@ -67,6 +67,6 @@ export async function generateSafetyReport(
       ],
     });
 
-    return response.text;
+    return response.text || "Error: No se pudo generar el análisis. Intente nuevamente.";
   }
 }
